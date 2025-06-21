@@ -30,7 +30,7 @@ def procesar():
 
     try:
         data = request.form
-        img_path = procesar_video_completo(
+        img_path, cortes = procesar_video_completo(
             video_path=path,
             crop_percent=float(data.get("crop_percent", 0)),
             keep_first_original=data.get("keep_first_original", "true") == "true",
@@ -43,9 +43,16 @@ def procesar():
             escala_reduccion=float(data.get("escala_reduccion", 1.0)),
             metodo_fusion=data.get("metodo_fusion", "simple")
         )
+        with open(img_path, "rb") as img_file:
+            img_base64 = base64.b64encode(img_file.read()).decode('utf-8')
         if os.path.exists(path):
             os.remove(path)
-        return send_file(img_path, mimetype='image/jpeg')
+        if os.path.exists(img_path):
+            os.remove(img_path)
+        return jsonify({
+            "imagen": img_base64,
+            "cortes": cortes
+        }), 200
     except Exception as e:
         if os.path.exists(path):
             os.remove(path)
