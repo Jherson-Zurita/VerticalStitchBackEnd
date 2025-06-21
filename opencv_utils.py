@@ -44,7 +44,7 @@ def procesar_video_completo(
     
     temp_file = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
     cv2.imwrite(temp_file.name, imagen_fusionada)
-    return temp_file.name
+    return temp_file.name, cortes
 
 def regenerar_imagen_nueva(cortes):
     global _last_cascade_frames, _last_direccion, _last_metodo_fusion
