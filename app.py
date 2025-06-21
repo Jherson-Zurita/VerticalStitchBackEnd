@@ -4,11 +4,12 @@ from werkzeug.utils import secure_filename
 import uuid
 from opencv_utils import procesar_video_completo, regenerar_imagen_nueva
 
-UPLOAD_FOLDER = "uploads"
+UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
 ALLOWED_EXTENSIONS = {"mp4", "avi", "mov"}
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
@@ -29,7 +30,6 @@ def procesar():
 
     try:
         data = request.form
-        # Convertir campos del formulario a tipos adecuados
         img_path = procesar_video_completo(
             video_path=path,
             crop_percent=float(data.get("crop_percent", 0)),
@@ -60,7 +60,4 @@ def regenerar():
         return send_file(img_path, mimetype='image/jpeg')
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-if __name__ == "__main__":
-    app.run(debug=True)
 
