@@ -66,6 +66,7 @@ def regenerar():
         cortes = json_data.get("cortes", [])
         print(f"[INFO] Cortes recibidos: {cortes}")
         cortes = [int(float(x)) for x in cortes]
+        print("Cortes :",cortes)
         img_path = regenerar_imagen_nueva([float(x) for x in cortes])
         @after_this_request
         def cleanup(response):
