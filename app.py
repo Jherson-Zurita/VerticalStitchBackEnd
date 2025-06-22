@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, send_file
+from flask import after_this_request
 import os
 from werkzeug.utils import secure_filename
 import uuid
@@ -66,8 +67,7 @@ def regenerar():
         cortes = json_data.get("cortes", [])
         print(f"[INFO] Cortes recibidos: {cortes}")
         cortes = [int(float(x)) for x in cortes]
-        print("Cortes :",cortes)
-        img_path = regenerar_imagen_nueva([float(x) for x in cortes])
+        img_path = regenerar_imagen_nueva(cortes)
         @after_this_request
         def cleanup(response):
             try:
