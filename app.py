@@ -65,6 +65,14 @@ def regenerar():
         json_data = request.get_json()
         cortes = json_data.get("cortes", [])
         img_path = regenerar_imagen_nueva([float(x) for x in cortes])
+        @after_this_request
+        def cleanup(response):
+            try:
+                os.remove(img_path)
+            except Exception as e:
+                print(f"Error eliminando archivo temporal: {e}")
+            return response
+
         return send_file(img_path, mimetype='image/jpeg')
     except Exception as e:
         return jsonify({"error": str(e)}), 500
