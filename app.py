@@ -3,6 +3,7 @@ import os
 from werkzeug.utils import secure_filename
 import uuid
 from opencv_utils import procesar_video_completo, regenerar_imagen_nueva
+import base64
 
 UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
 ALLOWED_EXTENSIONS = {"mp4", "avi", "mov"}
