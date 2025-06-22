@@ -47,7 +47,6 @@ def procesar_video_completo(
     return temp_file.name, cortes
 
 def regenerar_imagen_nueva(cortes):
-    cortes = [int(c) for c in cortes]
     global _last_cascade_frames, _last_direccion, _last_metodo_fusion
     if _last_cascade_frames is None:
         raise ValueError("No hay datos previos de procesamiento")
