@@ -64,6 +64,7 @@ def regenerar():
     try:
         json_data = request.get_json()
         cortes = json_data.get("cortes", [])
+        print(f"[INFO] Cortes recibidos: {cortes}")
         img_path = regenerar_imagen_nueva([float(x) for x in cortes])
         @after_this_request
         def cleanup(response):
@@ -75,5 +76,6 @@ def regenerar():
 
         return send_file(img_path, mimetype='image/jpeg')
     except Exception as e:
+        print(f"[ERROR] {str(e)}")
         return jsonify({"error": str(e)}), 500
 
