@@ -1,21 +1,25 @@
-from flask import Flask, request, jsonify, send_file
-from flask import after_this_request
+from flask import Flask, request, jsonify, send_file, after_this_request
 import os
 from werkzeug.utils import secure_filename
 import uuid
-from opencv_utils import procesar_video_completo, regenerar_imagen_nueva
 import base64
+import cv2
+import numpy as np
+from opencv_utils import procesar_video_completo, regenerar_imagen_nueva
 
 UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
 ALLOWED_EXTENSIONS = {"mp4", "avi", "mov"}
-
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route("/status", methods=["GET"])
+def status():
+    """Verifica si el servidor está en línea"""
+    return jsonify({"status": "online"}), 200
 
 @app.route("/procesar_video", methods=["POST"])
 def procesar():
@@ -32,7 +36,7 @@ def procesar():
 
     try:
         data = request.form
-        img_path, cortes = procesar_video_completo(
+        img_path, cortes, cascade_b64, direccion, metodo_fusion = procesar_video_completo(
             video_path=path,
             crop_percent=float(data.get("crop_percent", 0)),
             keep_first_original=data.get("keep_first_original", "true") == "true",
@@ -47,37 +51,51 @@ def procesar():
         )
         with open(img_path, "rb") as img_file:
             img_base64 = base64.b64encode(img_file.read()).decode('utf-8')
-        if os.path.exists(path):
-            os.remove(path)
-        if os.path.exists(img_path):
-            os.remove(img_path)
+
+        os.remove(path)
+        os.remove(img_path)
+
         return jsonify({
             "imagen": img_base64,
-            "cortes": cortes
+            "cortes": cortes,
+            "cascade_frames": cascade_b64,
+            "direccion": direccion,
+            "metodo_fusion": metodo_fusion
         }), 200
+
     except Exception as e:
-        if os.path.exists(path):
-            os.remove(path)
+        if os.path.exists(path): os.remove(path)
         return jsonify({"error": str(e)}), 500
 
 @app.route("/regenerar_imagen", methods=["POST"])
 def regenerar():
     try:
-        json_data = request.get_json()
-        cortes = json_data.get("cortes", [])
-        print(f"[INFO] Cortes recibidos: {cortes}")
-        cortes = [int(float(x)) for x in cortes]
-        img_path = regenerar_imagen_nueva(cortes)
+        data = request.get_json()
+        cortes = [int(float(x)) for x in data.get("cortes", [])]
+        cascade_b64 = data.get("cascade_frames", [])
+        direccion = data.get("direccion")
+        metodo_fusion = data.get("metodo_fusion")
+
+        cascade_frames = []
+        for b64 in cascade_b64:
+            img_data = base64.b64decode(b64)
+            nparr = np.frombuffer(img_data, np.uint8)
+            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            cascade_frames.append(frame)
+
+        img_path = regenerar_imagen_nueva(cascade_frames, cortes, metodo_fusion, direccion)
+
         @after_this_request
         def cleanup(response):
             try:
                 os.remove(img_path)
-            except Exception as e:
-                print(f"Error eliminando archivo temporal: {e}")
+            except Exception:
+                pass
             return response
 
         return send_file(img_path, mimetype='image/jpeg')
+
     except Exception as e:
-        print(f"[ERROR] {str(e)}")
+        print(f"[ERROR] {e}")
         return jsonify({"error": str(e)}), 500
 
